@@ -212,8 +212,10 @@ public class Charlie {
 	 * robot backward a certain distance
 	 **/
 	public void moveBackwardDist(double d) {
-		double vl = this.motorL.getSpeed() * (Math.PI / 180) * this.radiusL;
-		double vr = this.motorR.getSpeed() * (Math.PI / 180) * this.radiusR;
+		float speed = 180;
+		this.setBothSpeed(speed);
+		double vl = speed * (Math.PI / 180) * this.radiusL;
+		double vr = speed * (Math.PI / 180) * this.radiusR;
 		long sec = this.moveTime(vr, vl, d);
 		this.moveBackwardTime(sec);
 	}
@@ -337,7 +339,7 @@ public class Charlie {
 			sonic.fetchSample(sample_sonic, 0);
 			dists[i] = sample_sonic[0];
 			int loop = 0;
-			while (dists[i] > .8 && loop < 10) {
+			while (dists[i] > .8 && loop < 5) {
 				System.out.println("Infinity " + loop);
 				sonic.fetchSample(sample_sonic, 0);
 				dists[i] = sample_sonic[0];
@@ -426,6 +428,130 @@ public class Charlie {
 		double omega = (vl - vr) / this.L;
 		double time = (theta * Math.PI / 180) / omega;
 		return (long) time * 1000;
+	}
+
+///////////////////////////////////////////////// Sensing
+
+	public boolean leftBump() {
+		float[] sample_touchL = new float[touchL.sampleSize()];
+		touchL.fetchSample(sample_touchL, 0);
+		return sample_touchL[0] == 0;
+	}
+
+	public boolean frontBump() {
+		float[] sample_touchR = new float[touchR.sampleSize()];
+		touchR.fetchSample(sample_touchR, 0);
+		return sample_touchR[0] == 0;
+	}
+
+	public void trace2() {
+		// 1: take a valid reading from sonic
+		float sonic = this.sonicSense();
+
+		// 2: set initial speeds and move forward
+		float bs = 270;
+		this.setBothSpeed(bs);
+		this.syncMotors();
+		this.moveForwardBoth();
+
+		// NOTE: change looping condition to check for orientation
+		boolean orient = true;
+		// 3: loop till return to origin
+		while (!Button.ENTER.isDown()) {
+
+			// 4: check to see if wall is bumped
+			if (this.leftBump() || this.frontBump()) {
+				// 4.1: back up body length
+				this.moveBackwardDist(0.2);
+
+				// 4.2: move toward wall with greater distance
+				this.moveTillSense(.15);
+
+				// 4.3: turn
+				this.rotateRight(105);
+
+				// 4.4: move forward
+				this.moveForwardBoth();
+
+				// 4.5: continue on to next iteration of big loop
+				continue;
+			}
+
+			// 5: Check for crazy sonic distances
+			sonic = this.sonicSense();
+			if (sonic > 0.5) {
+				// 5.1: stop charlie
+				this.stopBothInstant();
+
+				// 5.2: rotate sensor
+				float[] sensed = this.sonicRotateSense();
+
+				// 5.3: rotate charlie depending on values
+
+				// cases:
+				// 1: wall could curve in
+				// 2: wall could curve out
+				// 3: wall could just be normal
+
+				continue;
+			}
+
+			// 6: Adjust speed based on distance
+			// note: sonic is 6 cm from the bump
+			if (sonic <= .16) {
+				// Option 1: too close
+				this.setDiffSpeeds(270, 180);
+			} else if (sonic >= .16 && sonic <= .26) {
+				// Option 2: just right -- set wheels to same speed and move on forward
+				this.setBothSpeed(180);
+			} else {
+				// Option 3: too far from wall
+				this.setDiffSpeeds(180, 270);
+			}
+		}
+		System.out.println("End loop");
+		this.stopBothInstant();
+		this.stopSync();
+	}
+
+	/*
+	 * Name: sonicRotateSense in: none out: float array holding 3 sensed distance
+	 * values
+	 */
+
+	// problems: sonic now sensing all 0s for some reason? why?
+	public float[] sonicRotateSense() {
+		float[] senses = new float[4];
+
+		// original angle is -90
+
+		// rotate back -45 degrees to sense behind (angle now at -135)
+		this.rotateSonic(-45);
+		senses[0] = this.sonicSense();
+		System.out.println(senses[0]);
+
+		// rotate forward 50 degrees to sense where position was but a little past to
+		// account for exact reflection
+		// angle now at -85
+		this.rotateSonic(50);
+		senses[1] = this.sonicSense();
+		System.out.println(senses[1]);
+
+		// rotate forward 40 (now angle is -45) so its looking ahead
+		this.rotateSonic(40);
+		senses[2] = this.sonicSense();
+		System.out.println(senses[2]);
+
+		// rotate forward (angel now at 0) and sense
+		this.rotateSonic(45);
+		senses[3] = this.sonicSense();
+		System.out.println(senses[3]);
+
+		// returns sonic to original state
+		// angle now at -90
+		this.rotateSonic(-90);
+
+		return senses;
 	}
 
 }

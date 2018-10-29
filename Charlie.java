@@ -435,13 +435,13 @@ public class Charlie {
 	public boolean leftBump() {
 		float[] sample_touchL = new float[touchL.sampleSize()];
 		touchL.fetchSample(sample_touchL, 0);
-		return sample_touchL[0] == 0;
+		return sample_touchL[0] != 0;
 	}
 
 	public boolean frontBump() {
 		float[] sample_touchR = new float[touchR.sampleSize()];
 		touchR.fetchSample(sample_touchR, 0);
-		return sample_touchR[0] == 0;
+		return sample_touchR[0] != 0;
 	}
 
 	public void trace2() {
@@ -459,30 +459,33 @@ public class Charlie {
 		// 3: loop till return to origin
 		while (!Button.ENTER.isDown()) {
 
-//			// 4: check to see if wall is bumped
-//			if (this.frontBump()) {
-//				System.out.println("front bump");
-//				this.stopBothInstant();
-//				// 4.1: back up body length
-//				this.moveBackwardDist(0.2);
-//
-//				// 4.2: move toward wall with greater distance
+			// 4: check to see if wall is bumped
+			if (this.frontBump()) {
+				System.out.println("front bump");
+				this.stopBothInstant();
+				// 4.1: back up body length
+				this.moveBackwardDist(0.15);
+
+				// 4.2: move toward wall with greater distance
+//				this.rotateSonic(90);
 //				this.moveTillSense(.15);
-//
-//				// 4.3: turn
-//				this.rotateRight(105);
-//
-//				// 4.4: move forward
-//				this.moveForwardBoth();
-//
-//				// 4.5: continue on to next iteration of big loop
-//				continue;
-//			} else if (this.leftBump()) {
-//				System.out.println("left bump");
-//				this.setDiffSpeeds(360, 180);
-//				continue;
-//			}
-//
+//				this.rotateSonic(-90);
+
+				// 4.3: turn
+				this.rotateRight(105);
+
+				// 4.4: move forward
+				this.moveForwardBoth();
+				this.setBothSpeed(270);
+
+				// 4.5: continue on to next iteration of big loop
+				continue;
+			} else if (this.leftBump()) {
+				System.out.println("left bump");
+				this.setDiffSpeeds(360, 180);
+				continue;
+			}
+
 //			// 5: Check for crazy sonic distances
 //			sonic = this.sonicSense();
 //			if (sonic > 0.5) {
@@ -514,18 +517,47 @@ public class Charlie {
 //				continue;
 //			}
 
+			// different speeds and different distances
+			// dbuff is the distance adjusted buffer used for testing different distances
+			// the distances below are already adjusted to account for distance between
+			// sonic sensor and bump bar
+			double dbuff = 0;
+			double d1 = .14;
+			double d2 = .19;
+			double d3 = .23;
+			double d4 = .28;
+			int s1 = 180;
+			int s2 = 210;
+			int s3 = 240;
+			int s4 = 270;
+
 			// 6: Adjust speed based on distance
 			// note: sonic is 6 cm from the bump
-			if (sonic <= .16) {
-				// Option 1: too close
-				this.setDiffSpeeds(360, 180);
-			} else if (sonic >= .16 && sonic <= .26) {
-				// Option 2: just right -- set wheels to same speed and move on forward
-				this.setBothSpeed(270);
+
+			if (sonic <= d1) {
+				// Option 1: way too close -- move to the right fast
+				System.out.println("too close: " + sonic);
+				this.setDiffSpeeds(s4, s1);
+			} else if (sonic > d1 && sonic <= d2) {
+				// Option 2: too close -- move to the right fast
+				System.out.println("close: " + sonic);
+				this.setDiffSpeeds(s3, s2);
+			} else if (sonic > d2 && sonic < d3) {
+				System.out.println("perfect: " + sonic);
+				// Option 3: perf
+				this.setBothSpeed(s4);
+			} else if (sonic >= d3 && sonic <= d4) {
+				System.out.println("far: " + sonic);
+				// Option 4: a little too far from wall
+				this.setDiffSpeeds(s2, s3);
+
 			} else {
-				// Option 3: too far from wall
-				this.setDiffSpeeds(180, 360);
+				System.out.println("too far: " + sonic);
+				// option 5: way too far from wall
+				this.setDiffSpeeds(s1, s4);
 			}
+
+			sonic = this.sonicSense();
 		}
 		System.out.println("End loop");
 		this.stopBothInstant();

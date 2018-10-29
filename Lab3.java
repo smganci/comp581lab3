@@ -28,12 +28,15 @@ public class Lab3 {
 //		Button.ENTER.waitForPressAndRelease();
 //		charlie.buttonWait();
 //
+		System.out.println("Press enter to start");
+		Button.ENTER.waitForPressAndRelease();
 		charlie.moveTillSense(.20);
 		charlie.rotateRight(105);
 //
 //		// 3: turn sensor
 		charlie.rotateSonic(-90);
-		Button.ENTER.waitForPressAndRelease();
+
+		System.out.println("Trace 2 begins");
 		charlie.trace2();
 //
 //		System.out.println("fin");

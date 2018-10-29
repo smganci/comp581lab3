@@ -22,16 +22,27 @@ public class Lab3 {
 //			Delay.msDelay(750);// Just so it does not spam output
 //		}
 
-		// testing sonic rotateSense()
-
-		System.out.println("Press Button to Start");
+//		// testing sonic rotateSense()
+//
+//		System.out.println("Press Button to Start");
+//		Button.ENTER.waitForPressAndRelease();
+//		charlie.buttonWait();
+//
+		charlie.moveTillSense(.20);
+		charlie.rotateRight(105);
+//
+//		// 3: turn sensor
+		charlie.rotateSonic(-90);
 		Button.ENTER.waitForPressAndRelease();
+		charlie.trace2();
+//
+//		System.out.println("fin");
+//
 		charlie.buttonWait();
-		float[] sonicsensed = charlie.sonicRotateSense();
-		for (int i = 0; i < sonicsensed.length; i++) {
-			System.out.println(sonicsensed[i]);
-		}
-		charlie.buttonWait();
+
+		// should test rotate left till sense
+//		charlie.rotateLeftTillSense(.5);
+		// should test new version of trace
 
 	}
 

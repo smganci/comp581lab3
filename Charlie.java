@@ -46,8 +46,8 @@ public class Charlie {
 		this.motorM = new EV3MediumRegulatedMotor(MotorPort.A);
 		this.touchSensorL = new EV3TouchSensor(SensorPort.S1);
 		this.touchSensorR = new EV3TouchSensor(SensorPort.S4);
-		this.sonicSensor = new EV3UltrasonicSensor(SensorPort.S3);
-		this.gyroSensor = new EV3GyroSensor(SensorPort.S2);
+		this.sonicSensor = new EV3UltrasonicSensor(SensorPort.S2);
+		this.gyroSensor = new EV3GyroSensor(SensorPort.S3);
 
 		this.touchL = this.touchSensorL.getTouchMode();
 		this.touchR = this.touchSensorR.getTouchMode();
@@ -459,54 +459,72 @@ public class Charlie {
 		// 3: loop till return to origin
 		while (!Button.ENTER.isDown()) {
 
-			// 4: check to see if wall is bumped
-			if (this.leftBump() || this.frontBump()) {
-				// 4.1: back up body length
-				this.moveBackwardDist(0.2);
-
-				// 4.2: move toward wall with greater distance
-				this.moveTillSense(.15);
-
-				// 4.3: turn
-				this.rotateRight(105);
-
-				// 4.4: move forward
-				this.moveForwardBoth();
-
-				// 4.5: continue on to next iteration of big loop
-				continue;
-			}
-
-			// 5: Check for crazy sonic distances
-			sonic = this.sonicSense();
-			if (sonic > 0.5) {
-				// 5.1: stop charlie
-				this.stopBothInstant();
-
-				// 5.2: rotate sensor
-				float[] sensed = this.sonicRotateSense();
-
-				// 5.3: rotate charlie depending on values
-
-				// cases:
-				// 1: wall could curve in
-				// 2: wall could curve out
-				// 3: wall could just be normal
-
-				continue;
-			}
+//			// 4: check to see if wall is bumped
+//			if (this.frontBump()) {
+//				System.out.println("front bump");
+//				this.stopBothInstant();
+//				// 4.1: back up body length
+//				this.moveBackwardDist(0.2);
+//
+//				// 4.2: move toward wall with greater distance
+//				this.moveTillSense(.15);
+//
+//				// 4.3: turn
+//				this.rotateRight(105);
+//
+//				// 4.4: move forward
+//				this.moveForwardBoth();
+//
+//				// 4.5: continue on to next iteration of big loop
+//				continue;
+//			} else if (this.leftBump()) {
+//				System.out.println("left bump");
+//				this.setDiffSpeeds(360, 180);
+//				continue;
+//			}
+//
+//			// 5: Check for crazy sonic distances
+//			sonic = this.sonicSense();
+//			if (sonic > 0.5) {
+//				// 5.1: stop charlie
+//				this.stopBothInstant();
+//
+//				// 5.2: rotate sensor
+//				float[] sensed = this.sonicRotateSense();
+//
+//				// 5.3: rotate charlie depending on values
+//
+//				// cases:
+//				// 1: wall could curve in
+//				// last readings will be closer than left
+//				// 2: wall could curve out
+//				// last readings
+//				// 3: wall could just be normal
+//
+//				// check for wall curved in by checking to see if there were some values
+//				if ((sensed[0] < 0.5 || sensed[1] < .5 || sensed[2] < .5) && sensed[3] > .4) {
+//
+//					// move forward for 10 cm
+//					this.moveForwardDist(.1);
+//					this.rotateLeftTillSense(0.4);
+//
+//					// turn in
+//
+//				}
+//				continue;
+//			}
 
 			// 6: Adjust speed based on distance
 			// note: sonic is 6 cm from the bump
 			if (sonic <= .16) {
 				// Option 1: too close
-				this.setDiffSpeeds(270, 180);
+				this.setDiffSpeeds(360, 180);
 			} else if (sonic >= .16 && sonic <= .26) {
 				// Option 2: just right -- set wheels to same speed and move on forward
-				this.setBothSpeed(180);
+				this.setBothSpeed(270);
 			} else {
 				// Option 3: too far from wall
-				this.setDiffSpeeds(180, 270);
+				this.setDiffSpeeds(180, 360);
 			}
 		}
 		System.out.println("End loop");
@@ -552,6 +570,18 @@ public class Charlie {
 		this.rotateSonic(-90);
 
 		return senses;
+	}
+
+	public void rotateLeftTillSense(double dist) {
+		this.stopSync();
+		this.motorR.forward();
+		float sample_sonic = this.sonicSense();
+		this.setRightSpeed(180);
+		while (sample_sonic > dist) {
+			this.motorR.forward();
+			sample_sonic = this.sonicSense();
+		}
+		this.stopBothInstant();
 	}
 
 }

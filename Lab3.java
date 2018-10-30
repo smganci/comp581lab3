@@ -1,7 +1,5 @@
 package lab3;
 
-import lejos.hardware.Button;
-
 /*Collaborators:
  * Tricia Bacon (730011125)
  * Sarah Ganci (720510446)
@@ -11,36 +9,32 @@ import lejos.hardware.Button;
 public class Lab3 {
 
 	public static void main(String[] args) {
-		Charlie charlie = new Charlie();
+		Charlieold charlie = new Charlieold();
 
-//		/// testing touch
-//		while (!Button.ENTER.isDown()) {
-//
-//			System.out.println("Touch Left: " + charlie.leftBump());
-//			System.out.println("Touch Front: " + charlie.frontBump());
-//
-//			Delay.msDelay(750);// Just so it does not spam output
-//		}
+		// 1: press button to start
+		System.out.println("Press Button to Start");
+		charlie.buttonWait();
 
-//		// testing sonic rotateSense()
-//
-//		System.out.println("Press Button to Start");
-//		Button.ENTER.waitForPressAndRelease();
-//		charlie.buttonWait();
-//
-		System.out.println("Press enter to start");
-		Button.ENTER.waitForPressAndRelease();
-		charlie.moveTillSense(.20);
+		// 2: move toward 20 cm away and beep
+		double goal_dist = charlie.moveTillSense(.20, 270) + .20;
+
+		System.out.println("the original goal dist was: " + goal_dist);
+		charlie.buttonWait();
+		// // charlie.beep();
+
+		// 3: rotate charlie right
 		charlie.rotateRight(105);
-//
-//		// 3: turn sensor
-		charlie.rotateSonic(-75);
 
+		// 4: turn sensor
+		charlie.rotateSonic(-80);
+
+		// 5: begin trace
 		System.out.println("Trace 2 begins");
-		charlie.trace2();
-//
-//		System.out.println("fin");
-//
+		charlie.trace3();
+
+		// 6: print out original distance
+		System.out.println("the original goal dist was: " + goal_dist);
+
 		charlie.buttonWait();
 
 		// should test rotate left till sense

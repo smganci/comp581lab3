@@ -1,5 +1,7 @@
 package lab3;
 
+import lab3.Coordinate;
+
 import java.util.Arrays;
 
 import lejos.hardware.Button;
@@ -17,7 +19,6 @@ import lejos.utility.Delay;
 /*Collaborators:
  * Tricia Bacon (730011125)
  * Sarah Ganci (720510446)
- * 
  * */
 
 public class Charlie {
@@ -32,7 +33,8 @@ public class Charlie {
 	private double radiusL;
 	private double radiusR;
 	private double L;
-	private float heading;
+	private double heading;
+	private Coordinate currentPosition;
 
 	// sensor modes
 	private SensorMode touchL;
@@ -46,8 +48,8 @@ public class Charlie {
 		this.motorM = new EV3MediumRegulatedMotor(MotorPort.A);
 		this.touchSensorL = new EV3TouchSensor(SensorPort.S1);
 		this.touchSensorR = new EV3TouchSensor(SensorPort.S4);
-		this.sonicSensor = new EV3UltrasonicSensor(SensorPort.S3);
-		this.gyroSensor = new EV3GyroSensor(SensorPort.S2);
+		this.sonicSensor = new EV3UltrasonicSensor(SensorPort.S2);
+		this.gyroSensor = new EV3GyroSensor(SensorPort.S3);
 
 		this.touchL = this.touchSensorL.getTouchMode();
 		this.touchR = this.touchSensorR.getTouchMode();
@@ -56,7 +58,8 @@ public class Charlie {
 		this.radiusL = .028;
 		this.radiusR = .028;
 		this.L = .12;
-		this.heading = 0;
+		this.heading = 90;
+		this.currentPosition = new Coordinate(0, 0);
 	}
 
 	/*
@@ -118,13 +121,18 @@ public class Charlie {
 	 */
 	public void moveTillSense(double d) {
 		this.syncMotors();
+		float speed = 180;
+		this.setBothSpeed(speed);
 		float[] sample_sonic = new float[this.sonic.sampleSize()];
 		this.sonic.fetchSample(sample_sonic, 0);
+		long startTime = System.nanoTime();
 		while (sample_sonic[0] > d) {
 			this.moveForwardBoth();
 			sonic.fetchSample(sample_sonic, 0);
 		}
 		this.stopBothInstant();
+		long time = (System.nanoTime() - startTime);
+		this.getPositionStraight(this.heading, speed, time);
 		this.stopSync();
 	}
 
@@ -134,15 +142,19 @@ public class Charlie {
 	 */
 	public void moveTillTouch() {
 		this.syncMotors();
+		float speed = 180;
+		this.setBothSpeed(speed);
 		float[] sample_touchL = new float[touchL.sampleSize()];
 		float[] sample_touchR = new float[touchR.sampleSize()];
-
+		long startTime = System.nanoTime();
 		while (sample_touchL[0] == 0 && sample_touchR[0] == 0) {
 			this.moveForwardBoth();
 			touchL.fetchSample(sample_touchL, 0);
 			touchR.fetchSample(sample_touchR, 0);
 		}
 		this.stopBothInstant();
+		long time = (System.nanoTime() - startTime);
+		this.getPositionStraight(this.heading, speed, time);
 		this.stopSync();
 	}
 
@@ -164,9 +176,12 @@ public class Charlie {
 	 */
 	public void moveForwardTime(long sec) {
 		this.syncMotors();
+		float speed = 180;
+		this.setBothSpeed(speed);
 		this.moveForwardBoth();
 		Delay.msDelay(sec);
 		this.stopBothInstant();
+		this.getPositionStraight(this.heading, speed, (long) (sec * Math.pow(10, 9)));
 		this.stopSync();
 	}
 
@@ -176,9 +191,12 @@ public class Charlie {
 	 */
 	public void moveBackwardTime(long sec) {
 		this.syncMotors();
+		float speed = 180;
+		this.setBothSpeed(speed);
 		this.moveBackwardBoth();
 		Delay.msDelay(sec);
 		this.stopBothInstant();
+		this.getPositionStraight(this.heading, speed, (long) (sec * Math.pow(10, 9)));
 		this.stopSync();
 	}
 
@@ -205,6 +223,7 @@ public class Charlie {
 		double vr = speed * (Math.PI / 180) * this.radiusR;
 		long sec = this.moveTime(vr, vl, d);
 		this.moveForwardTime(sec);
+		this.getPositionStraight(this.heading, speed, (long) (sec * Math.pow(10, 9)));
 	}
 
 	/*
@@ -212,10 +231,13 @@ public class Charlie {
 	 * robot backward a certain distance
 	 **/
 	public void moveBackwardDist(double d) {
+		float speed = 180;
+		this.setBothSpeed(speed);
 		double vl = this.motorL.getSpeed() * (Math.PI / 180) * this.radiusL;
 		double vr = this.motorR.getSpeed() * (Math.PI / 180) * this.radiusR;
 		long sec = this.moveTime(vr, vl, d);
 		this.moveBackwardTime(sec);
+		this.getPositionStraight(this.heading, speed, (long) (sec * Math.pow(10, 9)));
 	}
 
 	/*
@@ -245,35 +267,81 @@ public class Charlie {
 		this.syncMotors();
 		this.moveForwardBoth();
 
-		double l1 = 0.08 / Math.cos(5 * Math.PI / 36);
-		double l2 = 0.12 / Math.cos(5 * Math.PI / 36);
-		double l3 = 0.18 / Math.cos(5 * Math.PI / 36);
-		double l4 = 0.22 / Math.cos(5 * Math.PI / 36);
-		double l5 = 0.3 / Math.cos(5 * Math.PI / 36);
+		long startTime = System.nanoTime();
+		long time;
 
 		while (sonic < 0.5) {
 
 			if (sonic <= .05) {
-				// Option 1: way too close -- move to the right fast
+				startTime = System.nanoTime();
 				this.setDiffSpeeds(270, 180);
+				while (sonic <= .05) {
+					sonic = sonicSense();
+				}
+				time = (System.nanoTime() - startTime);
+				this.turnRight(270, 180, time, getAngle(270, 180, time));
+				this.currentPosition.printPosition();
+				// Option 1: way too close -- move to the right fast
 			} else if (sonic < .12) {
 				// Option 2: way too close -- move to the right fast
+				startTime = System.nanoTime();
 				this.setDiffSpeeds(240, 180);
+				while (sonic < .12) {
+					sonic = sonicSense();
+				}
+				time = (System.nanoTime() - startTime);
+				this.turnRight(240, 180, time, getAngle(240, 180, time));
+				this.currentPosition.printPosition();
 			} else if (sonic < .14) {
 				// Option 3: a little to close to wall -- adjust right a little
+				startTime = System.nanoTime();
 				this.setDiffSpeeds(210, 180);
+				while (sonic < .14) {
+					sonic = sonicSense();
+				}
+				time = (System.nanoTime() - startTime);
+				this.turnRight(210, 180, time, getAngle(210, 180, time));
+				this.currentPosition.printPosition();
 			} else if (sonic >= .14 && sonic <= .16) {
 				// Option 4: just right -- set wheels to same speed and move on forward
+				startTime = System.nanoTime();
 				this.setBothSpeed(180);
+				while (sonic >= .14 && sonic <= .16) {
+					sonic = sonicSense();
+				}
+				time = (System.nanoTime() - startTime);
+				this.getPositionStraight(this.heading, 180, time);
+				this.currentPosition.printPosition();
 			} else if (sonic > .16 && sonic <= .2) {
 				// Option 5: a little too far from wall -- move left slow
+				startTime = System.nanoTime();
 				this.setDiffSpeeds(180, 210);
+				while (sonic > .16 && sonic <= .2) {
+					sonic = sonicSense();
+				}
+				time = (System.nanoTime() - startTime);
+				this.turnLeft(180, 210, time, getAngle(180, 210, time));
+				this.currentPosition.printPosition();
 			} else if (sonic > .2 && sonic <= .25) {
 				// Option 6: a little too far from wall -- move left slow
+				startTime = System.nanoTime();
 				this.setDiffSpeeds(180, 240);
+				while (sonic > .2 && sonic <= .25) {
+					sonic = sonicSense();
+				}
+				time = (System.nanoTime() - startTime);
+				this.turnLeft(180, 240, time, getAngle(180, 240, time));
+				this.currentPosition.printPosition();
 			} else { // .2
 				// Option 7: way too far -- move to the left fast
+				startTime = System.nanoTime();
 				this.setDiffSpeeds(180, 270);
+				while (sonic > .25 && sonic <= .4) {
+					sonic = sonicSense();
+				}
+				time = (System.nanoTime() - startTime);
+				this.turnLeft(180, 270, time, getAngle(180, 270, time));
+				this.currentPosition.printPosition();
 			}
 			sonic = this.sonicSense();
 			if (sonic > .4) {
@@ -333,7 +401,6 @@ public class Charlie {
 		float[] dists = new float[3];
 		float[] sample_sonic = new float[sonic.sampleSize()];
 		for (int i = 0; i < dists.length; i++) {
-			System.out.println("Sensing Sonic");
 			sonic.fetchSample(sample_sonic, 0);
 			dists[i] = sample_sonic[0];
 			int loop = 0;
@@ -354,9 +421,9 @@ public class Charlie {
 	 * out: none description:
 	 */
 
-	public void moveToward(double x, double y) {
-
-	}
+//	public void moveToward(double x, double y) {
+//
+//	}
 
 	/*
 	 * Name: rotateRight in: degrees to rotate out: nothing description: should turn
@@ -364,19 +431,17 @@ public class Charlie {
 	 */
 
 	public void rotateRight(long degrees) {
-		// move right forward and left backward to create a spin
 		this.stopSync();
-		this.motorL.forward();
-//		this.motorR.backward();
-
-//		long delay= (long) (degrees/av)*1000; // need to set delay time
 		this.setLeftSpeed(180);
+		this.motorL.forward();
+
+		// long delay= (long) (degrees/av)*1000; // need to set delay time
 		long delay = this.timeToRotate(0, 180, degrees);
 		Delay.msDelay(delay);
 
 		// stop both motors
 		this.stopBothInstant();
-//		this.heading += degrees;
+		this.turnRight(0, 180, (long) (delay * Math.pow(10, 9)), -degrees);
 
 	}
 
@@ -386,33 +451,36 @@ public class Charlie {
 	 */
 
 	public void rotateLeft(int degrees) {
-		System.out.println("RotateLeft");
-
 		// move right forward and left backward to create a spin
 		this.stopSync();
+		this.setRightSpeed(180);
+
 		this.motorR.forward();
 
-		this.setRightSpeed(180);
 		long delay = this.timeToRotate(180, 0, degrees);
 		Delay.msDelay(delay);
 
 		// stop both motors
 		this.stopBothInstant();
-//		this.heading -= degrees;
+		this.turnLeft(180, 0, (long) (delay * Math.pow(10, 9)), degrees);
 	}
 
-	public float theta() {
-		float[] sample_gyro = new float[gyro.sampleSize()];
-		this.gyro.fetchSample(sample_gyro, 0);
-		return sample_gyro[0];
+//	public float theta() {
+//		float[] sample_gyro = new float[gyro.sampleSize()];
+//		this.gyro.fetchSample(sample_gyro, 0);
+//		return sample_gyro[0];
+//	}
+
+	public void setHeading(double theta) {
+		this.heading = theta;
 	}
 
-	public void setHeading() {
-		this.heading = this.theta();
-	}
-
-	public float getHeading() {
+	public double getHeading() {
 		return this.heading;
+	}
+
+	public Coordinate getPosition() {
+		return this.currentPosition;
 	}
 
 //	/*Name: timeToRotate
@@ -423,9 +491,96 @@ public class Charlie {
 	public long timeToRotate(double ur, double ul, double theta) {
 		double vr = ur * Math.PI / 180 * this.radiusR;
 		double vl = ul * Math.PI / 180 * this.radiusL;
-		double omega = (vl - vr) / this.L;
+		double omega = (vr - vl) / this.L;
 		double time = (theta * Math.PI / 180) / omega;
 		return (long) time * 1000;
+	}
+
+	public double getAngle(double ur, double ul, long time) {
+		double vr = ur * Math.PI / 180 * this.radiusR;
+		double vl = ul * Math.PI / 180 * this.radiusL;
+		double omega = (vr - vl) / this.L;
+		System.out.println("Omega = " + omega);
+		double theta = omega * time / Math.pow(10, 9);
+		System.out.println(theta*180/Math.PI);
+		return theta * 180 / Math.PI;
+	}
+
+	public void turnRight(double ur, double ul, long time, double degrees) {
+		double vr = ur * Math.PI / 180 * this.radiusR;
+		double vl = ul * Math.PI / 180 * this.radiusL;
+		double R = (this.L / 2) * ((vl + vr) / (vl - vr));
+		double angle = degrees * Math.PI / 180;
+//		Coordinate ICC = new Coordinate(this.currentPosition.getX() + R * Math.cos(angle),
+//				this.currentPosition.getY() - R * Math.sin(angle));
+		Coordinate ICC = new Coordinate(this.currentPosition.getX() + R * Math.sin(angle),
+				this.currentPosition.getY() - R * Math.cos(angle));
+		this.currentPosition = getPositionClockwise(angle, ICC);
+		this.heading += degrees;
+	}
+
+	public void turnLeft(double ur, double ul, long time, double degrees) {
+		double vr = ur * Math.PI / 180 * this.radiusR;
+		double vl = ul * Math.PI / 180 * this.radiusL;
+		double R = (this.L / 2) * ((vl + vr) / (vr - vl));
+		double angle = degrees * Math.PI / 180;
+//		Coordinate ICC = new Coordinate(this.currentPosition.getX() - R * Math.cos(angle),
+//				this.currentPosition.getY() + R * Math.sin(angle));
+		Coordinate ICC = new Coordinate(this.currentPosition.getX() - R * Math.sin(angle),
+				this.currentPosition.getY() + R * Math.cos(angle));
+		this.currentPosition = getPositionCCwise(angle, ICC);
+		this.heading += degrees;
+	}
+
+	public Coordinate getPositionClockwise(double angle, Coordinate ICC) {
+		double ICCx = ICC.getX();
+		double ICCy = ICC.getY();
+		angle *= -1;
+		double x = (Math.cos(angle) * (this.currentPosition.getX() - ICCx))
+				- (Math.sin(angle) * (this.currentPosition.getY() - ICCy)) + ICCx;
+//		double x = (Math.sin(angle) * (this.currentPosition.getY() - ICCy))
+//				- (Math.cos(angle) * (this.currentPosition.getX() - ICCx)) + ICCx;
+		double y = (Math.sin(angle) * (this.currentPosition.getX() - ICCx))
+				+ (Math.cos(angle) * (this.currentPosition.getY() - ICCy)) + ICCy;
+		return new Coordinate(x, y);
+	}
+
+	public Coordinate getPositionCCwise(double angle, Coordinate ICC) {
+		double ICCx = ICC.getX();
+		double ICCy = ICC.getY();
+		double x = (Math.cos(angle) * (this.currentPosition.getX() - ICCx))
+				- (Math.sin(angle) * (this.currentPosition.getY() - ICCy)) + ICCx;
+		double y = (Math.sin(angle) * (this.currentPosition.getX() - ICCx))
+				+ (Math.cos(angle) * (this.currentPosition.getY() - ICCy)) + ICCy;
+		return new Coordinate(x, y);
+	}
+
+	public void getPositionStraight(double degrees, float u, long time) {
+		double v = u * Math.PI / 180 * this.radiusR;
+		double x = this.currentPosition.getX() + (v * Math.cos(degrees * Math.PI / 180) * (time / Math.pow(10, 9)));
+		double y = this.currentPosition.getY() + (v * Math.sin(degrees * Math.PI / 180) * (time / Math.pow(10, 9)));
+		this.currentPosition = new Coordinate (x, y);
+	}
+
+	public void goAtSetSpeed(float ur, float ul) {
+		this.setDiffSpeeds(ul, ur);
+		this.moveForwardBoth();
+		long time = (long) (5 * Math.pow(10, 9));
+		this.stopBothInstant();
+		if (ur > ul) {
+			System.out.println("R>L");
+			turnLeft(ur, ul, time, getAngle(ur, ul, time));
+			System.out.println(this.heading);
+		} else if (ur < ul) {
+			System.out.println("R<L");
+			turnRight(ur, ul, time, getAngle(ur, ul, time));
+			System.out.println(this.heading);
+		} else {
+			System.out.println("R=L");
+			getPositionStraight(this.heading, ur, time);
+			System.out.println(this.heading);
+		}
+		this.currentPosition.printPosition();
 	}
 
 }

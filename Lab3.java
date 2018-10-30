@@ -34,7 +34,7 @@ public class Lab3 {
 		charlie.rotateRight(105);
 //
 //		// 3: turn sensor
-		charlie.rotateSonic(-90);
+		charlie.rotateSonic(-75);
 
 		System.out.println("Trace 2 begins");
 		charlie.trace2();

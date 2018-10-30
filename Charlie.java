@@ -335,12 +335,12 @@ public class Charlie {
 		float[] dists = new float[3];
 		float[] sample_sonic = new float[sonic.sampleSize()];
 		for (int i = 0; i < dists.length; i++) {
-			System.out.println("Sensing Sonic");
+			// System.out.println("Sensing Sonic");
 			sonic.fetchSample(sample_sonic, 0);
 			dists[i] = sample_sonic[0];
 			int loop = 0;
 			while (dists[i] > .8 && loop < 5) {
-				System.out.println("Infinity " + loop);
+				// System.out.println("Infinity " + loop);
 				sonic.fetchSample(sample_sonic, 0);
 				dists[i] = sample_sonic[0];
 				loop++;
@@ -482,7 +482,7 @@ public class Charlie {
 				continue;
 			} else if (this.leftBump()) {
 				System.out.println("left bump");
-				this.setDiffSpeeds(360, 180);
+				this.setDiffSpeeds(180, 270);
 				continue;
 			}
 

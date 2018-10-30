@@ -16,24 +16,24 @@ public class Lab3 {
 		charlie.buttonWait();
 
 		// 2: move toward 20 cm away and beep
-		double goal_dist = charlie.moveTillSense(.20, 270) + .20;
+		charlie.moveTillSense(.20);
 
-		System.out.println("the original goal dist was: " + goal_dist);
-		charlie.buttonWait();
+		// System.out.println("the original goal dist was: " + goal_dist);
+		// charlie.buttonWait();
 		// // charlie.beep();
+
+		// 4: turn sensor
+		charlie.rotateSonic(-75);
 
 		// 3: rotate charlie right
 		charlie.rotateRight(105);
 
-		// 4: turn sensor
-		charlie.rotateSonic(-80);
-
 		// 5: begin trace
-		System.out.println("Trace 2 begins");
+		System.out.println("Trace 3 begins");
 		charlie.trace3();
 
 		// 6: print out original distance
-		System.out.println("the original goal dist was: " + goal_dist);
+		// System.out.println("the original goal dist was: " + goal_dist);
 
 		charlie.buttonWait();
 

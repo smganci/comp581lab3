@@ -2,7 +2,6 @@ package lab3;
 
 import java.util.Arrays;
 
-import lab3.Coordinate;
 import lejos.hardware.Button;
 import lejos.hardware.Sound;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
@@ -269,7 +268,28 @@ public class Charlie {
 		long startTime = System.nanoTime();
 		long time;
 
-		while (sonic < 0.5) {
+		while (!Button.ENTER.isDown()) {
+			// 4: check to see if wall is bumped
+			if (this.frontBump()) {
+				System.out.println("front bump");
+				this.stopBothInstant();
+				// 4.1: back up body length
+				this.moveBackwardDist(0.15);
+
+				// 4.3: turn
+				this.rotateRight(105);
+
+				// 4.4: move forward
+				this.moveForwardBoth();
+				this.setBothSpeed(180);
+
+				// 4.5: continue on to next iteration of big loop
+				continue;
+			} else if (this.leftBump()) {
+				System.out.println("left bump");
+				this.setDiffSpeeds(180, 270);
+				continue;
+			}
 
 			if (sonic <= .05) {
 				startTime = System.nanoTime();
@@ -343,19 +363,19 @@ public class Charlie {
 				this.currentPosition.printPosition();
 			}
 			sonic = this.sonicSense();
-			if (sonic > .4) {
-//					this.motorM.rotateTo((int) this.heading);
-//					float sonic1 = this.sonicSense();
-//					this.motorM.rotate(45);
-//					float sonic2 = this.sonicSense();
-				System.out.println("in greater than .4 statement " + sonic);
-				this.stopBothInstant();
-//					this.rotateLeft(30);
-				sonic = sonicSense();
-				if (sonic > .5) {
-					break;
-				}
-			}
+//			if (sonic > .4) {
+////					this.motorM.rotateTo((int) this.heading);
+////					float sonic1 = this.sonicSense();
+////					this.motorM.rotate(45);
+////					float sonic2 = this.sonicSense();
+//				System.out.println("in greater than .4 statement " + sonic);
+//				this.stopBothInstant();
+////					this.rotateLeft(30);
+//				sonic = sonicSense();
+//				if (sonic > .5) {
+//					break;
+//				}
+//			}
 		}
 		System.out.println("End loop");
 		this.stopBothInstant();
@@ -580,6 +600,71 @@ public class Charlie {
 			System.out.println(this.heading);
 		}
 		this.currentPosition.printPosition();
+	}
+
+	///////////// Sarah's new methods:
+	/*
+	 * Name: sonicRotateSense in: none out: float array holding 3 sensed distance
+	 * values
+	 */
+
+	// problems: sonic now sensing all 0s for some reason? why?
+	public float[] sonicRotateSense() {
+		float[] senses = new float[4];
+
+		// original angle is -90
+
+		// rotate back -45 degrees to sense behind (angle now at -135)
+		this.rotateSonic(-45);
+		senses[0] = this.sonicSense();
+		System.out.println(senses[0]);
+
+		// rotate forward 50 degrees to sense where position was but a little past to
+		// account for exact reflection
+		// angle now at -85
+		this.rotateSonic(50);
+		senses[1] = this.sonicSense();
+		System.out.println(senses[1]);
+
+		// rotate forward 40 (now angle is -45) so its looking ahead
+		this.rotateSonic(40);
+		senses[2] = this.sonicSense();
+		System.out.println(senses[2]);
+
+		// rotate forward (angel now at 0) and sense
+		this.rotateSonic(45);
+		senses[3] = this.sonicSense();
+		System.out.println(senses[3]);
+
+		// returns sonic to original state
+		// angle now at -90
+		this.rotateSonic(-90);
+
+		return senses;
+	}
+
+	public void rotateLeftTillSense(double dist) {
+		this.stopSync();
+		this.motorR.forward();
+		float sample_sonic = this.sonicSense();
+		this.setRightSpeed(180);
+		while (sample_sonic > dist) {
+			this.motorR.forward();
+			sample_sonic = this.sonicSense();
+		}
+		this.stopBothInstant();
+	}
+
+	public boolean leftBump() {
+		float[] sample_touchL = new float[touchL.sampleSize()];
+		touchL.fetchSample(sample_touchL, 0);
+		return sample_touchL[0] != 0;
+	}
+
+	public boolean frontBump() {
+		float[] sample_touchR = new float[touchR.sampleSize()];
+		touchR.fetchSample(sample_touchR, 0);
+		return sample_touchR[0] != 0;
 	}
 
 }

@@ -116,22 +116,21 @@ public class Charlieold {
 	 * description: moves robot forward till sonic sensor senses an obstacle a
 	 * certain distance away
 	 */
-	public double moveTillSense(double d, int speed) {
+	public void moveTillSense(double d) {
 		this.syncMotors();
+		float speed = 180;
+		this.setBothSpeed(speed);
 		float[] sample_sonic = new float[this.sonic.sampleSize()];
 		this.sonic.fetchSample(sample_sonic, 0);
-		this.setBothSpeed(speed);
-		this.moveForwardBoth();
-		double start = System.nanoTime();
+		long startTime = System.nanoTime();
 		while (sample_sonic[0] > d) {
+			this.moveForwardBoth();
 			sonic.fetchSample(sample_sonic, 0);
 		}
-		double stop = System.nanoTime() - start;
 		this.stopBothInstant();
+		long time = (System.nanoTime() - startTime);
+		// this.getPositionStraight(this.heading, speed, time);
 		this.stopSync();
-
-		// distance travelled: velocity *t
-		return (stop / 1_000_000_000.0) * speed * (Math.PI / 180.0) * 2 * Math.PI * this.radiusL;
 	}
 
 	/*
@@ -567,22 +566,29 @@ public class Charlieold {
 				continue;
 			}
 
-			if (sonic <= .05) {
+			double dbuff = .06;
+			double d1 = 0.05 + dbuff;
+			double d2 = 0.12 + dbuff;
+			double d3 = 0.14 + dbuff;
+			double d4 = .16 + dbuff;
+			double d5 = .18 + dbuff;
+			double d6 = .25 + dbuff;
+			if (sonic <= d1) {
 				// Option 1: way too close -- move to the right fast
 				this.setDiffSpeeds(270, 180);
-			} else if (sonic < .12) {
+			} else if (sonic < d2) {
 				// Option 2: way too close -- move to the right fast
 				this.setDiffSpeeds(240, 180);
-			} else if (sonic < .14) {
+			} else if (sonic < d3) {
 				// Option 3: a little to close to wall -- adjust right a little
 				this.setDiffSpeeds(210, 180);
-			} else if (sonic >= .14 && sonic <= .16) {
+			} else if (sonic >= d3 && sonic <= d4) {
 				// Option 4: just right -- set wheels to same speed and move on forward
 				this.setBothSpeed(180);
-			} else if (sonic > .16 && sonic <= .2) {
+			} else if (sonic > d4 && sonic <= d5) {
 				// Option 5: a little too far from wall -- move left slow
 				this.setDiffSpeeds(180, 210);
-			} else if (sonic > .2 && sonic <= .25) {
+			} else if (sonic > d5 && sonic <= d6) {
 				// Option 6: a little too far from wall -- move left slow
 				this.setDiffSpeeds(180, 240);
 			} else { // .2

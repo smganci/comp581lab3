@@ -48,6 +48,7 @@ public class Charlie {
 	private double theta;
 	private double prevt;
 	private double goaldist;
+	private int hits;
 
 	public Charlie() {
 		this.motorL = new EV3LargeRegulatedMotor(MotorPort.B);
@@ -71,6 +72,8 @@ public class Charlie {
 		this.y = 0;
 		this.theta = 0;
 		this.goaldist = .1;
+		this.hits = 0;
+
 	}
 
 	/*
@@ -132,7 +135,7 @@ public class Charlie {
 	 */
 	public void moveTillSense(double d) {
 		this.syncMotors();
-		float speed = 180;
+		float speed = 270;
 		this.setBothSpeed(speed);
 		float[] sample_sonic = new float[this.sonic.sampleSize()];
 		this.sonic.fetchSample(sample_sonic, 0);
@@ -219,7 +222,7 @@ public class Charlie {
 	 * robot forward a certain distance
 	 **/
 	public void moveForwardDist(double d) {
-		float speed = 180;
+		float speed = 270;
 		this.setBothSpeed(speed);
 		double vl = speed * (Math.PI / 180) * this.radiusL;
 		double vr = speed * (Math.PI / 180) * this.radiusR;
@@ -592,6 +595,7 @@ public class Charlie {
 		this.rotateRight(90);
 		// Move towards goal
 		double dist = this.goaldist;
+		this.setBothSpeed(270);
 		this.moveForwardDist(dist);
 	}
 

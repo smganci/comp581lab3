@@ -15,54 +15,26 @@ public class Lab3 {
 		System.out.println("Press Button to Start");
 		charlie.buttonWait();
 
-		// 2: move toward 20 cm away and beep
-		charlie.setBothSpeed(270);
+		// 2: move toward 20 cm away
 		charlie.moveTillSense(.20);
 
+		// 3: beep within 30 cm
 		charlie.beep();
 
 		// 4: turn sensor
 		charlie.rotateSonic(-70);
 
-		// 3: rotate charlie right
+		// 5: rotate charlie right
 		charlie.rotateRight(90);
 
-		System.out.println("Current pos is:");
-		charlie.printPos();
-		System.out.println("Current gyro reading is:" + charlie.gthetha());
-		charlie.buttonWait();
-
-		// 5: begin trace
-		System.out.println("Trace 3 begins");
+		// 6: trace wall
 		charlie.trace();
 
-		System.out.println("Current pos is:");
-		charlie.printPos();
-		System.out.println("ending gyro reading is:" + charlie.gthetha());
-		charlie.buttonWait();
+		// 7: return to start
 		charlie.returnToStart();
 
-		charlie.buttonWait();
-//		// charlie.thisIsHalloween();
-
-//		Charlie charlie = new Charlie();
-//		charlie.printPos();
-//		System.out.println("press to start");
-//		charlie.buttonWait();
-//
-//		charlie.moveTillTouch();
-//		charlie.printPos();
-//		charlie.buttonWait();
-//
-//		charlie.moveBackwardDist(.15);
-//
-//		charlie.printPos();
-//		charlie.buttonWait();
-//
-//		charlie.buttonWait();
-//		charlie.rotateRight(105);
-//		charlie.printPos();
-//		charlie.buttonWait();
+		// 8: Happy Halloween :)
+		charlie.thisIsHalloween();
 
 	}
 

@@ -43,7 +43,26 @@ public class Lab3 {
 		charlie.returnToStart();
 
 		charlie.buttonWait();
-		// charlie.thisIsHalloween();
+//		// charlie.thisIsHalloween();
+
+//		Charlie charlie = new Charlie();
+//		charlie.printPos();
+//		System.out.println("press to start");
+//		charlie.buttonWait();
+//
+//		charlie.moveTillTouch();
+//		charlie.printPos();
+//		charlie.buttonWait();
+//
+//		charlie.moveBackwardDist(.15);
+//
+//		charlie.printPos();
+//		charlie.buttonWait();
+//
+//		charlie.buttonWait();
+//		charlie.rotateRight(105);
+//		charlie.printPos();
+//		charlie.buttonWait();
 
 	}
 

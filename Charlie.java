@@ -198,9 +198,9 @@ public class Charlie {
 	public void moveBackwardTime(long sec) {
 		this.syncMotors();
 		this.moveBackwardBoth();
-		this.updateBackwards();
+		// this.updateBackwards();
 		Delay.msDelay(sec);
-		this.update();
+		// this.updateBackwards();
 		this.stopBothInstant();
 		this.stopSync();
 	}
@@ -237,6 +237,8 @@ public class Charlie {
 		double vl = speed * (Math.PI / 180) * this.radiusL;
 		double vr = speed * (Math.PI / 180) * this.radiusR;
 		long sec = this.moveTime(vr, vl, d);
+		x = x - d * Math.cos(this.theta);
+		y = y - d * Math.sin(this.theta);
 
 		this.moveBackwardTime(sec);
 	}
@@ -316,11 +318,12 @@ public class Charlie {
 
 	public void rotateRight(long degrees) {
 		this.stopSync();
-		this.motorL.forward();
 		this.setLeftSpeed(180);
+		this.motorL.forward();
 		this.update();
 		long delay = this.timeToRotate(0, 180, degrees);
 		Delay.msDelay(delay);
+//		this.update
 		this.update();
 		this.stopBothInstant();
 	}
@@ -411,10 +414,12 @@ public class Charlie {
 			// 4: check to see if wall is bumped
 			if (this.frontBump()) {
 				System.out.println("front bump");
+				this.update();
 				this.stopBothInstant();
 				// 4.1: back up body length
 				this.moveBackwardDist(0.15);
-
+//				x = x - .15 * Math.cos(this.theta);
+//				y = y - .15 * Math.sin(this.theta);
 				// 4.3: turn
 				this.rotateRight(105);
 
@@ -430,7 +435,7 @@ public class Charlie {
 				continue;
 			}
 
-			double dbuff = .06;
+			double dbuff = .08;
 			double d1 = 0.05 + dbuff;
 			double d2 = 0.12 + dbuff;
 			double d3 = 0.14 + dbuff;

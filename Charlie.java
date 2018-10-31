@@ -32,7 +32,9 @@ public class Charlie {
 	private double radiusL;
 	private double radiusR;
 	private double L;
-	private float heading;
+	// gheading should hold the initial read of heading based on gyrosensor after
+	// turn right at wall
+	private float gheading;
 
 	// sensor modes
 	private SensorMode touchL;
@@ -44,6 +46,8 @@ public class Charlie {
 	private double x;
 	private double y;
 	private double theta;
+	private double prevt;
+	private double goaldist;
 
 	public Charlie() {
 		this.motorL = new EV3LargeRegulatedMotor(MotorPort.B);
@@ -61,11 +65,12 @@ public class Charlie {
 		this.radiusL = .028;
 		this.radiusR = .028;
 		this.L = .12;
-		this.heading = 0;
+		this.gheading = 0;
 
 		this.x = 0;
 		this.y = 0;
 		this.theta = 0;
+		this.goaldist = .1;
 	}
 
 	/*
@@ -138,6 +143,7 @@ public class Charlie {
 		}
 		this.stopBothInstant();
 		long time = (System.nanoTime() - startTime);
+		this.goaldist = speed * Math.PI / 180 * this.radiusR * time / Math.pow(10, 9);
 		// this.getPositionStraight(this.heading, speed, time);
 		this.stopSync();
 	}
@@ -148,12 +154,12 @@ public class Charlie {
 	 */
 	public void moveTillTouch() {
 		this.syncMotors();
-		float[] sample_touchL = new float[touchL.sampleSize()];
+		// float[] sample_touchL = new float[touchL.sampleSize()];
 		float[] sample_touchR = new float[touchR.sampleSize()];
 
-		while (sample_touchL[0] == 0 && sample_touchR[0] == 0) {
+		while (sample_touchR[0] == 0) {
 			this.moveForwardBoth();
-			touchL.fetchSample(sample_touchL, 0);
+			// touchL.fetchSample(sample_touchL, 0);
 			touchR.fetchSample(sample_touchR, 0);
 		}
 		this.stopBothInstant();
@@ -179,6 +185,7 @@ public class Charlie {
 	public void moveForwardTime(long sec) {
 		this.syncMotors();
 		this.moveForwardBoth();
+		this.update();
 		Delay.msDelay(sec);
 		this.stopBothInstant();
 		this.stopSync();
@@ -191,7 +198,9 @@ public class Charlie {
 	public void moveBackwardTime(long sec) {
 		this.syncMotors();
 		this.moveBackwardBoth();
+		this.updateBackwards();
 		Delay.msDelay(sec);
+		this.update();
 		this.stopBothInstant();
 		this.stopSync();
 	}
@@ -228,6 +237,7 @@ public class Charlie {
 		double vl = speed * (Math.PI / 180) * this.radiusL;
 		double vr = speed * (Math.PI / 180) * this.radiusR;
 		long sec = this.moveTime(vr, vl, d);
+
 		this.moveBackwardTime(sec);
 	}
 
@@ -244,66 +254,6 @@ public class Charlie {
 	 */
 	public void buttonWait() {
 		Button.ENTER.waitForPressAndRelease();
-	}
-
-	public void trace() {
-		// 1: take a valid reading from sonic
-		float sonic = this.sonicSense();
-
-		// 2: set initial speeds and move forward
-		float bs = 270;
-		this.setBothSpeed(bs);
-		this.syncMotors();
-		this.moveForwardBoth();
-
-		double l1 = 0.08 / Math.cos(5 * Math.PI / 36);
-		double l2 = 0.12 / Math.cos(5 * Math.PI / 36);
-		double l3 = 0.18 / Math.cos(5 * Math.PI / 36);
-		double l4 = 0.22 / Math.cos(5 * Math.PI / 36);
-		double l5 = 0.3 / Math.cos(5 * Math.PI / 36);
-
-		while (sonic < 0.5) {
-
-			if (sonic <= .05) {
-				// Option 1: way too close -- move to the right fast
-				this.setDiffSpeeds(270, 180);
-			} else if (sonic < .12) {
-				// Option 2: way too close -- move to the right fast
-				this.setDiffSpeeds(240, 180);
-			} else if (sonic < .14) {
-				// Option 3: a little to close to wall -- adjust right a little
-				this.setDiffSpeeds(210, 180);
-			} else if (sonic >= .14 && sonic <= .16) {
-				// Option 4: just right -- set wheels to same speed and move on forward
-				this.setBothSpeed(180);
-			} else if (sonic > .16 && sonic <= .2) {
-				// Option 5: a little too far from wall -- move left slow
-				this.setDiffSpeeds(180, 210);
-			} else if (sonic > .2 && sonic <= .25) {
-				// Option 6: a little too far from wall -- move left slow
-				this.setDiffSpeeds(180, 240);
-			} else { // .2
-				// Option 7: way too far -- move to the left fast
-				this.setDiffSpeeds(180, 270);
-			}
-			sonic = this.sonicSense();
-			if (sonic > .4) {
-//				this.motorM.rotateTo((int) this.heading);
-//				float sonic1 = this.sonicSense();
-//				this.motorM.rotate(45);
-//				float sonic2 = this.sonicSense();
-				System.out.println("in greater than .4 statement " + sonic);
-				this.stopBothInstant();
-//				this.rotateLeft(30);
-				sonic = sonicSense();
-				if (sonic > .5) {
-					break;
-				}
-			}
-		}
-		System.out.println("End loop");
-		this.stopBothInstant();
-		this.stopSync();
 	}
 
 	public void setProportionalSpeeds(float son, float angle) {
@@ -368,8 +318,10 @@ public class Charlie {
 		this.stopSync();
 		this.motorL.forward();
 		this.setLeftSpeed(180);
+		this.update();
 		long delay = this.timeToRotate(0, 180, degrees);
 		Delay.msDelay(delay);
+		this.update();
 		this.stopBothInstant();
 	}
 
@@ -378,7 +330,7 @@ public class Charlie {
 	 * the robot in place towards goal
 	 */
 
-	public void rotateLeft(int degrees) {
+	public void rotateLeft(long degrees) {
 		System.out.println("RotateLeft");
 
 		// move right forward and left backward to create a spin
@@ -390,18 +342,18 @@ public class Charlie {
 		this.stopBothInstant();
 	}
 
-	public float theta() {
+	public float gthetha() {
 		float[] sample_gyro = new float[gyro.sampleSize()];
 		this.gyro.fetchSample(sample_gyro, 0);
 		return sample_gyro[0];
 	}
 
-	public void setHeading() {
-		this.heading = this.theta();
+	public void setgHeading() {
+		this.gheading = this.gthetha();
 	}
 
 	public float getHeading() {
-		return this.heading;
+		return this.gheading;
 	}
 
 //	/*Name: timeToRotate
@@ -431,20 +383,30 @@ public class Charlie {
 		return sample_touchR[0] != 0;
 	}
 
-	public void trace2() {
+	public void trace() {
 		// 1: take a valid reading from sonic
 		float sonic = this.sonicSense();
 
-		// 2: set initial speeds and move forward
-		float bs = 270;
+		// 2: set origin, prevt, and initial speeds
+		this.x = 0;
+		this.y = 0;
+		this.theta = 0;
+		this.setgHeading();
+		// set first prevt
+		this.prevt = System.nanoTime();
+		double startTime = System.nanoTime();
+		float bs = 180;
 		this.setBothSpeed(bs);
 		this.syncMotors();
 		this.moveForwardBoth();
 
-		// NOTE: change looping condition to check for orientation
-		boolean orient = true;
+		System.out.println((System.nanoTime() - startTime > 30 * Math.pow(10, 9)));
+
 		// 3: loop till return to origin
-		while (!Button.ENTER.isDown()) {
+		while (!Button.ENTER.isDown()
+				&& !(withinRange(.15, .15) && (System.nanoTime() - startTime > 30 * Math.pow(10, 9)))) {
+			// 4: update x, y, theta
+			this.update();
 
 			// 4: check to see if wall is bumped
 			if (this.frontBump()) {
@@ -458,87 +420,7 @@ public class Charlie {
 
 				// 4.4: move forward
 				this.moveForwardBoth();
-				this.setBothSpeed(270);
-
-				// 4.5: continue on to next iteration of big loop
-				continue;
-			} else if (this.leftBump()) {
-				System.out.println("left bump");
-				this.setDiffSpeeds(270, 180);
-				continue;
-			}
-
-			double dbuff = 0;
-			double d1 = .14 + dbuff;
-			double d2 = .19 + dbuff;
-			double d3 = .23 + dbuff;
-			double d4 = .28 + dbuff;
-			int s1 = 180;
-			int s2 = 210;
-			int s3 = 240;
-			int s4 = 270;
-
-			// 6: Adjust speed based on distance
-			// note: sonic is 6 cm from the bump
-
-			if (sonic <= d1) {
-				// Option 1: way too close -- move to the right fast
-				System.out.println("too close: " + sonic);
-				this.setDiffSpeeds(s4, s1);
-			} else if (sonic > d1 && sonic <= d2) {
-				// Option 2: too close -- move to the right fast
-				System.out.println("close: " + sonic);
-				this.setDiffSpeeds(s3, s2);
-			} else if (sonic > d2 && sonic < d3) {
-				System.out.println("perfect: " + sonic);
-				// Option 3: perf
-				this.setBothSpeed(s4);
-			} else if (sonic >= d3 && sonic <= d4) {
-				System.out.println("far: " + sonic);
-				// Option 4: a little too far from wall
-				this.setDiffSpeeds(s2, s3);
-
-			} else {
-				System.out.println("too far: " + sonic);
-				// option 5: way too far from wall
-				this.setDiffSpeeds(s1, s4);
-			}
-
-			sonic = this.sonicSense();
-		}
-		System.out.println("End loop");
-		this.stopBothInstant();
-		this.stopSync();
-	}
-
-	public void trace3() {
-		// 1: take a valid reading from sonic
-		float sonic = this.sonicSense();
-
-		// 2: set initial speeds and move forward
-		float bs = 270;
-		this.setBothSpeed(bs);
-		this.syncMotors();
-		this.moveForwardBoth();
-
-		// NOTE: change looping condition to check for orientation
-		boolean orient = true;
-		// 3: loop till return to origin
-		while (!Button.ENTER.isDown()) {
-
-			// 4: check to see if wall is bumped
-			if (this.frontBump()) {
-				System.out.println("front bump");
-				this.stopBothInstant();
-				// 4.1: back up body length
-				this.moveBackwardDist(0.15);
-
-				// 4.3: turn
-				this.rotateRight(105);
-
-				// 4.4: move forward
-				this.moveForwardBoth();
-				this.setBothSpeed(270);
+				this.setBothSpeed(bs);
 
 				// 4.5: continue on to next iteration of big loop
 				continue;
@@ -637,15 +519,112 @@ public class Charlie {
 		this.stopBothInstant();
 	}
 
-	public void update(double start, double end) {
+	/*
+	 * update: in: start time in nano seconds and end time in nano seconds
+	 */
+	public void update() {
+		double end = System.nanoTime();
+		double start = this.prevt / Math.pow(10, 9);
+		// after prevt is converted and stored in start set prevt to end
+		this.prevt = end;
+		end = end / Math.pow(10, 9);
 		double dt = end - start;
 		// vl/r is equal to the motor speed converted to radians multiplied by radius
 		double vr = this.motorR.getSpeed() * (Math.PI / 180) * this.radiusR;
 		double vl = this.motorL.getSpeed() * (Math.PI / 180) * this.radiusL;
 		double w = (vr - vl) / this.L;
+
+		// adjust will hold the percent we should multiply by to account for carpet
+		double xadjust = .9748;
 		this.theta += w * dt;
-		this.x += ((vl + vr) / 2.0) * Math.cos(this.theta) * dt;
+		this.x += xadjust * ((vl + vr) / 2.0) * Math.cos(this.theta) * dt;
 		this.y += ((vl + vr) / 2.0) * Math.sin(this.theta) * dt;
+		System.out.println("Pose: (" + this.x + ", " + this.y + ", " + this.theta + ")");
 	}
 
+	public void updateBackwards() {
+		double end = System.nanoTime();
+		double start = this.prevt / Math.pow(10, 9);
+		// after prevt is converted and stored in start set prevt to end
+		this.prevt = end;
+		end = end / Math.pow(10, 9);
+		double dt = end - start;
+		// vl/r is equal to the motor speed converted to radians multiplied by radius
+		double vr = -this.motorR.getSpeed() * (Math.PI / 180) * this.radiusR;
+		double vl = -this.motorL.getSpeed() * (Math.PI / 180) * this.radiusL;
+		double w = (vr - vl) / this.L;
+
+		// adjust will hold the percent we should multiply by to account for carpet
+		double xadjust = .9748;
+		this.theta += w * dt;
+		this.x += xadjust * ((vl + vr) / 2.0) * Math.cos(this.theta) * dt;
+		this.y += ((vl + vr) / 2.0) * Math.sin(this.theta) * dt;
+		System.out.println("Pose: (" + this.x + ", " + this.y + ", " + this.theta + ")");
+	}
+
+	public void printPos() {
+		System.out.println("x: " + this.x + ", y: " + this.y + ", theta: " + this.theta);
+	}
+
+	public boolean withinRange(double x, double y) {
+		return ((this.x < x && this.x >= 0 - x) && (this.y < y && this.y > 0 - y));
+	}
+
+	public void returnToStart() {
+		// Turn towards goal
+//		while (this.theta <= -Math.PI) {
+//			this.theta += 2 * Math.PI;
+//		}
+//		while (this.theta > Math.PI) {
+//			this.theta -= 2 * Math.PI;
+//		}
+//		double angleToTurn = this.theta + Math.PI / 2.0;
+//		if (angleToTurn > 0) {
+//			this.rotateRight((long) angleToTurn);
+//		} else if (angleToTurn < 0) {
+//			this.rotateLeft((long) (-angleToTurn));
+//		}
+		this.rotateRight(90);
+		// Move towards goal
+		double dist = this.goaldist;
+		this.moveForwardDist(dist);
+	}
+
+	public void returnToStartBackup() {
+		this.rotateRight(90);
+		double dist = this.goaldist;
+		this.moveForwardDist(dist);
+	}
+
+	public void thisIsHalloween() {
+		// "This is Halloween"
+		Sound.playTone(392, 300);
+		Sound.playTone(392, 300);
+		Sound.playTone(392, 150);
+		Sound.playTone(367, 150);
+		Sound.playTone(330, 300);
+		// "This is Halloween"
+		Sound.playTone(392, 300);
+		Sound.playTone(392, 300);
+		Sound.playTone(392, 150);
+		Sound.playTone(367, 150);
+		Sound.playTone(330, 300);
+		// "Halloween" (higher)
+		Sound.playTone(494, 150);
+		Sound.playTone(466, 150);
+		Sound.playTone(415, 300);
+		// "Halloween"
+		Sound.playTone(494, 150);
+		Sound.playTone(466, 150);
+		Sound.playTone(415, 300);
+		// "Halloween" (lower)
+		Sound.playTone(415, 150);
+		Sound.playTone(392, 150);
+		Sound.playTone(349, 300);
+		// "Halloween"
+		Sound.playTone(415, 150);
+		Sound.playTone(392, 150);
+		Sound.playTone(349, 300);
+		// Wow these lyrics really aren't helpful
+	}
 }

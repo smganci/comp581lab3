@@ -16,30 +16,34 @@ public class Lab3 {
 		charlie.buttonWait();
 
 		// 2: move toward 20 cm away and beep
+		charlie.setBothSpeed(270);
 		charlie.moveTillSense(.20);
 
-		// System.out.println("the original goal dist was: " + goal_dist);
-		// charlie.buttonWait();
-		// // charlie.beep();
+		charlie.beep();
 
 		// 4: turn sensor
-		charlie.rotateSonic(-75);
+		charlie.rotateSonic(-70);
 
 		// 3: rotate charlie right
-		charlie.rotateRight(105);
+		charlie.rotateRight(90);
+
+		System.out.println("Current pos is:");
+		charlie.printPos();
+		System.out.println("Current gyro reading is:" + charlie.gthetha());
+		charlie.buttonWait();
 
 		// 5: begin trace
 		System.out.println("Trace 3 begins");
-		charlie.trace3();
+		charlie.trace();
 
-		// 6: print out original distance
-		// System.out.println("the original goal dist was: " + goal_dist);
+		System.out.println("Current pos is:");
+		charlie.printPos();
+		System.out.println("ending gyro reading is:" + charlie.gthetha());
+		charlie.buttonWait();
+		charlie.returnToStart();
 
 		charlie.buttonWait();
-
-		// should test rotate left till sense
-//		charlie.rotateLeftTillSense(.5);
-		// should test new version of trace
+		// charlie.thisIsHalloween();
 
 	}
 

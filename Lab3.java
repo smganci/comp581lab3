@@ -9,7 +9,7 @@ package lab3;
 public class Lab3 {
 
 	public static void main(String[] args) {
-		Charlieold charlie = new Charlieold();
+		Charlie charlie = new Charlie();
 
 		// 1: press button to start
 		System.out.println("Press Button to Start");

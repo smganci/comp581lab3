@@ -17,6 +17,9 @@ public class Lab3 {
 
 		// 2: move toward 20 cm away
 		charlie.moveTillSense(.20);
+		System.out.println("current pos:");
+		charlie.printPos();
+		charlie.buttonWait();
 
 		// 3: beep within 30 cm
 		charlie.beep();
@@ -32,6 +35,8 @@ public class Lab3 {
 
 		// 7: return to start
 		charlie.returnToStart();
+		// charlie.printPos();
+		// charlie.buttonWait();
 
 		// 8: Happy Halloween :)
 		charlie.thisIsHalloween();

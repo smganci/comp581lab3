@@ -323,11 +323,24 @@ public class Charlie {
 		this.stopSync();
 		this.setLeftSpeed(180);
 		this.motorL.forward();
-		this.update();
 		long delay = this.timeToRotate(0, 180, degrees);
 		Delay.msDelay(delay);
-//		this.update
-		this.update();
+		this.theta -= (degrees * Math.PI / 180.0);
+		double vl = 180 * (Math.PI / 180) * this.radiusL;
+		this.x += (vl / 2.0) * Math.cos(this.theta) * (delay / 1000.0);
+		this.y += (vl / 2.0) * Math.sin(this.theta) * (delay / 1000.0);
+		this.stopBothInstant();
+	}
+
+	public void rotateRight2(long degrees) {
+		this.stopSync();
+		this.setLeftSpeed(180);
+		this.motorL.forward();
+		double nanodelay = System.nanoTime() + (Math.pow(10, 9) * this.timeToRotate(0, 180, degrees));
+		while (System.nanoTime() < nanodelay) {
+			this.motorL.forward();
+			this.update();
+		}
 		this.stopBothInstant();
 	}
 
@@ -469,7 +482,6 @@ public class Charlie {
 			}
 			sonic = this.sonicSense();
 		}
-		System.out.println("End loop");
 		this.stopBothInstant();
 		this.stopSync();
 
@@ -547,7 +559,8 @@ public class Charlie {
 		this.theta += w * dt;
 		this.x += xadjust * ((vl + vr) / 2.0) * Math.cos(this.theta) * dt;
 		this.y += ((vl + vr) / 2.0) * Math.sin(this.theta) * dt;
-		System.out.println("Pose: (" + this.x + ", " + this.y + ", " + this.theta + ")");
+		// System.out.println("Pose: (" + this.x + ", " + this.y + ", " + this.theta +
+		// ")");
 	}
 
 	public void updateBackwards() {
@@ -567,7 +580,8 @@ public class Charlie {
 		this.theta += w * dt;
 		this.x += xadjust * ((vl + vr) / 2.0) * Math.cos(this.theta) * dt;
 		this.y += ((vl + vr) / 2.0) * Math.sin(this.theta) * dt;
-		System.out.println("Pose: (" + this.x + ", " + this.y + ", " + this.theta + ")");
+		// SSystem.out.println("Pose: (" + this.x + ", " + this.y + ", " + this.theta +
+		// ")");
 	}
 
 	public void printPos() {
